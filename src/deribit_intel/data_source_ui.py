@@ -18,6 +18,7 @@ def resolve_input_path(page_key: str, local_default: str = "artifacts/s3_extract
     source = st.sidebar.radio(
         "Data source",
         ["Local parquet", "S3 daily parquet"],
+        index=1,
         key=f"{page_key}_data_source",
     )
     if source == "Local parquet":
