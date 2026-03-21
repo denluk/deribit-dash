@@ -125,7 +125,7 @@ fig1.update_layout(
     plot_bgcolor="#0e1117",
     paper_bgcolor="#0e1117",
 )
-st.plotly_chart(fig1, use_container_width=True)
+st.plotly_chart(fig1, width="stretch")
 
 # ── 2. GEX timeseries ────────────────────────────────────────────────
 st.subheader("Net GEX over time")
@@ -155,7 +155,7 @@ fig2.update_layout(
     plot_bgcolor="#0e1117",
     paper_bgcolor="#0e1117",
 )
-st.plotly_chart(fig2, use_container_width=True)
+st.plotly_chart(fig2, width="stretch")
 
 # ── 3. GEX by expiry ─────────────────────────────────────────────────
 st.subheader("GEX distribution by maturity")
@@ -183,7 +183,7 @@ fig3.update_layout(
     paper_bgcolor="#0e1117",
     coloraxis_showscale=False,
 )
-st.plotly_chart(fig3, use_container_width=True)
+st.plotly_chart(fig3, width="stretch")
 
 # ── 4. call vs put breakdown ─────────────────────────────────────────
 st.subheader("Call GEX vs Put GEX by strike")
@@ -217,7 +217,7 @@ fig4.update_layout(
     plot_bgcolor="#0e1117",
     paper_bgcolor="#0e1117",
 )
-st.plotly_chart(fig4, use_container_width=True)
+st.plotly_chart(fig4, width="stretch")
 
 # ── 5. interpretation box ────────────────────────────────────────────
 with st.expander("How to read GEX", expanded=False):

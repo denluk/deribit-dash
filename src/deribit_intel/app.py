@@ -14,6 +14,7 @@ Core pages:
 - Execution & Risk
 - Market-First Signals
 - Surface Fit & Quality
+- **GEX — Gamma Exposure** (dealer-gamma framework, vol regime indicator)
 
 The repricing layer is used for normalization and scenario work, not as a claim of true venue pricing.
 """)
