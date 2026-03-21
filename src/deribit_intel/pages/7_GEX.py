@@ -34,6 +34,10 @@ with st.sidebar:
     )
     gex_scale = st.radio("GEX scale", ["USD (million)", "BTC"], index=0)
     show_zero_gamma = st.checkbox("Show zero-gamma line", value=True)
+    strike_range_pct = st.slider(
+        "Strike range around spot (%)", min_value=5, max_value=80, value=30,
+        help="Show only strikes within ±N% of spot. Narrows the chart → fatter bars."
+    )
 
 # ── filter by DTE ───────────────────────────────────────────────────
 df_filtered = df[df["tte_days"] <= tte_max].copy()
@@ -78,7 +82,11 @@ st.caption(
     "Dashed lines: spot (white), zero-gamma level (orange), gamma wall (blue)."
 )
 
-gex_plot = gex_strike.copy()
+spot = levels["spot"]
+strike_lo = spot * (1 - strike_range_pct / 100)
+strike_hi = spot * (1 + strike_range_pct / 100)
+
+gex_plot = gex_strike[gex_strike["strike"].between(strike_lo, strike_hi)].copy()
 gex_plot["gex_net_scaled"] = gex_plot["gex_net"] / scale_div
 gex_plot["color"] = gex_plot["gex_net_scaled"].apply(lambda x: "positive" if x >= 0 else "negative")
 
@@ -118,10 +126,12 @@ if levels["max_pos_gamma_strike"]:
 
 fig1.update_layout(
     barmode="relative",
+    bargap=0,
+    bargroupgap=0,
     xaxis_title="Strike",
     yaxis_title=f"Net GEX ({scale_label})",
     legend_title="Dealer position",
-    height=480,
+    height=580,
     plot_bgcolor="#0e1117",
     paper_bgcolor="#0e1117",
 )
@@ -192,7 +202,7 @@ st.caption(
     "Large red put GEX below spot = significant support/pin zone for dealers."
 )
 
-gex_stack = gex_strike.copy()
+gex_stack = gex_strike[gex_strike["strike"].between(strike_lo, strike_hi)].copy()
 gex_stack["gex_call_scaled"] = gex_stack["gex_call"] / scale_div
 gex_stack["gex_put_scaled"]  = gex_stack["gex_put"]  / scale_div
 
@@ -211,9 +221,11 @@ fig4.add_vline(
 )
 fig4.update_layout(
     barmode="relative",
+    bargap=0,
+    bargroupgap=0,
     xaxis_title="Strike",
     yaxis_title=f"GEX ({scale_label})",
-    height=380,
+    height=500,
     plot_bgcolor="#0e1117",
     paper_bgcolor="#0e1117",
 )
