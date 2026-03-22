@@ -1,6 +1,7 @@
 """GEX — Gamma Exposure (crypto-adapted dealer-gamma framework)."""
 from __future__ import annotations
 
+import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
@@ -16,6 +17,8 @@ from deribit_intel.gex_engine import (
     compute_charm_pressure,
     compute_vanna_exposure,
     find_key_levels,
+    compute_gex_by_strike_split,
+    compute_gex_at_hour,
 )
 
 # ── constants ────────────────────────────────────────────────────────
@@ -166,6 +169,106 @@ fig1.update_layout(
     plot_bgcolor=BG, paper_bgcolor=BG,
 )
 st.plotly_chart(fig1, width="stretch")
+
+# ══════════════════════════════════════════════════════════════════
+# CHART 1b — Dealer vs Speculator GEX split
+# ══════════════════════════════════════════════════════════════════
+st.subheader("Dealer vs Speculator GEX — participant proxy")
+st.caption(
+    "Deribit does not tag participants. Proxy: **vol/OI ratio** per instrument. "
+    "Low turnover (vol/OI ≤ median) → structural / dealer-like hedging book. "
+    "High turnover (vol/OI > median) → active speculation / retail-like flow. "
+    "Divergence between groups at a strike = contested level."
+)
+
+gex_split = compute_gex_by_strike_split(df_f)
+gex_split_f = gex_split[gex_split["strike"].between(strike_lo, strike_hi)].copy()
+gex_split_f["net_s"] = gex_split_f["gex_net_eq"] / scale_div
+
+TEAL   = "#26c6da"
+YELLOW = "#ffee58"
+
+fig1b = go.Figure()
+for participant, color in [("Structural / Dealer-like", TEAL), ("Speculative / Retail-like", YELLOW)]:
+    grp = gex_split_f[gex_split_f["participant"] == participant]
+    if grp.empty:
+        continue
+    fig1b.add_trace(go.Bar(
+        x=grp["strike"], y=grp["net_s"],
+        name=participant, marker_color=color, opacity=0.75,
+    ))
+
+fig1b.add_vline(x=spot, line_dash="dash", line_color="white", line_width=2,
+                annotation_text=f"Spot ${spot:,.0f}", annotation_position="top right")
+if show_zero_gamma and levels["zero_gamma_strike"]:
+    fig1b.add_vline(x=levels["zero_gamma_strike"], line_dash="dot", line_color=ORANGE,
+                    line_width=1.5,
+                    annotation_text=f"Zero γ ${levels['zero_gamma_strike']:,.0f}",
+                    annotation_position="bottom right")
+fig1b.add_hline(y=0, line_color="grey", line_dash="dash", line_width=1)
+fig1b.update_layout(
+    barmode="group", bargap=0.1,
+    xaxis_title="Strike", yaxis_title=f"Net GEX ({scale_lbl})",
+    height=480, plot_bgcolor=BG, paper_bgcolor=BG,
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+)
+st.plotly_chart(fig1b, width="stretch")
+
+# ══════════════════════════════════════════════════════════════════
+# CHART 1c — GEX Evolution (now / -1H / -4H)
+# ══════════════════════════════════════════════════════════════════
+st.subheader("GEX profile evolution — now vs -1H vs -4H")
+st.caption(
+    "Overlay of GEX profiles at different points in time. "
+    "Shifts in gamma walls reveal where hedging demand is building or collapsing. "
+    "Only hours present in the loaded dataset are shown."
+)
+
+available_hours = sorted(df_f["hour"].unique())
+latest_hour = available_hours[-1] if available_hours else None
+
+evo_snapshots = {}  # label → DataFrame
+if latest_hour is not None:
+    evo_snapshots[f"Now ({latest_hour.strftime('%H:%M')})"] = compute_gex_at_hour(df_f, latest_hour)
+
+    for label, delta_h in [("-1H", 1), ("-4H", 4)]:
+        target = latest_hour - pd.Timedelta(hours=delta_h)
+        # find closest available hour ≤ target
+        candidates = [h for h in available_hours if h <= target]
+        if candidates:
+            h = max(candidates)
+            evo_snapshots[f"{label} ({h.strftime('%H:%M')})"] = compute_gex_at_hour(df_f, h)
+
+EVO_COLORS = {0: "white", 1: "#42a5f5", 2: "#ab47bc"}
+EVO_DASH   = {0: "solid", 1: "dash", 2: "dot"}
+
+fig1c = go.Figure()
+for idx, (lbl, evo_df) in enumerate(evo_snapshots.items()):
+    if evo_df.empty:
+        continue
+    evo_f = evo_df[evo_df["strike"].between(strike_lo, strike_hi)].copy()
+    evo_f["net_s"] = evo_f["gex_net_eq"] / scale_div
+    opacity = 1.0 - idx * 0.25
+    fig1c.add_trace(go.Scatter(
+        x=evo_f["strike"], y=evo_f["net_s"],
+        mode="lines",
+        line=dict(color=EVO_COLORS[idx], width=2 - idx * 0.4, dash=EVO_DASH[idx]),
+        opacity=max(opacity, 0.45),
+        name=lbl,
+        fill="tozeroy" if idx == 0 else None,
+        fillcolor="rgba(255,255,255,0.05)" if idx == 0 else None,
+    ))
+
+if latest_hour is not None:
+    fig1c.add_vline(x=spot, line_dash="dash", line_color="white", line_width=2,
+                    annotation_text=f"Spot ${spot:,.0f}", annotation_position="top right")
+fig1c.add_hline(y=0, line_color="grey", line_dash="dash", line_width=1)
+fig1c.update_layout(
+    xaxis_title="Strike", yaxis_title=f"Net GEX equity ({scale_lbl})",
+    height=400, plot_bgcolor=BG, paper_bgcolor=BG,
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+)
+st.plotly_chart(fig1c, width="stretch")
 
 # ══════════════════════════════════════════════════════════════════
 # CHART 2 — Absolute gamma walls (sign-agnostic)

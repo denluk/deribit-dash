@@ -369,3 +369,92 @@ def find_key_levels(gex_by_strike: pd.DataFrame, max_pain_df: pd.DataFrame | Non
         "call_wall": call_wall,
         "max_pain": max_pain,
     }
+
+
+# ─────────────────────────────────────────────────────────────────
+# PARTICIPANT SPLIT — dealer vs speculative proxy
+# ─────────────────────────────────────────────────────────────────
+
+def compute_gex_by_strike_split(df: pd.DataFrame, spot_override: float | None = None) -> pd.DataFrame:
+    """
+    Split GEX by participant type proxy (vol/OI ratio):
+      - Structural / Dealer-like : vol/OI <= median  → established hedging book, low turnover
+      - Speculative / Retail-like : vol/OI > median  → active trading, directional flow
+
+    Deribit does not tag participants, so this is the best available proxy.
+    Returns columns: strike, gex_net_eq, participant, spot
+    """
+    snap = _latest_snapshot(df)
+    spot = spot_override or snap["underlying"].median()
+
+    snap = snap.copy()
+    # vol/OI ratio — instruments actively traded have higher ratio
+    snap["vol_oi"] = (
+        snap["volume_24h"] / snap["open_interest"].replace(0, np.nan)
+    ).fillna(0)
+    median_ratio = snap["vol_oi"].median()
+    snap["participant"] = np.where(
+        snap["vol_oi"] <= median_ratio, "Structural / Dealer-like", "Speculative / Retail-like"
+    )
+
+    results = []
+    for participant, group in snap.groupby("participant", observed=True):
+        grp = group.groupby(["strike", "type"], observed=True).agg(
+            gamma=("gamma", "median"),
+            open_interest=("open_interest", "sum"),
+        ).reset_index()
+
+        calls = grp[grp["type"] == "call"].copy()
+        puts  = grp[grp["type"] == "put"].copy()
+        calls["gex_c"] = _gex_usd(calls["open_interest"], calls["gamma"], spot)
+        puts["gex_p"]  = _gex_usd(puts["open_interest"],  puts["gamma"],  spot)
+
+        merged = pd.merge(
+            calls[["strike", "gex_c"]],
+            puts [["strike", "gex_p"]],
+            on="strike", how="outer",
+        ).fillna(0)
+        # equity convention
+        merged["gex_net_eq"] = merged["gex_c"] - merged["gex_p"]
+        merged["participant"] = participant
+        results.append(merged)
+
+    out = pd.concat(results, ignore_index=True)
+    out["spot"] = spot
+    return out
+
+
+# ─────────────────────────────────────────────────────────────────
+# TIME EVOLUTION — GEX snapshot at a specific hour
+# ─────────────────────────────────────────────────────────────────
+
+def compute_gex_at_hour(df: pd.DataFrame, target_hour) -> pd.DataFrame:
+    """
+    GEX by strike (equity convention) for a specific historical hour.
+    Returns empty DataFrame if that hour is not in the data.
+    Columns: strike, gex_net_eq, spot
+    """
+    snap = df[df["hour"] == target_hour].copy()
+    if snap.empty:
+        return pd.DataFrame(columns=["strike", "gex_net_eq", "spot"])
+
+    spot = snap["underlying"].median()
+
+    grp = snap.groupby(["strike", "type"], observed=True).agg(
+        gamma=("gamma", "median"),
+        open_interest=("open_interest", "sum"),
+    ).reset_index()
+
+    calls = grp[grp["type"] == "call"].copy()
+    puts  = grp[grp["type"] == "put"].copy()
+    calls["gex_c"] = _gex_usd(calls["open_interest"], calls["gamma"], spot)
+    puts["gex_p"]  = _gex_usd(puts["open_interest"],  puts["gamma"],  spot)
+
+    merged = pd.merge(
+        calls[["strike", "gex_c"]],
+        puts [["strike", "gex_p"]],
+        on="strike", how="outer",
+    ).fillna(0)
+    merged["gex_net_eq"] = merged["gex_c"] - merged["gex_p"]
+    merged["spot"] = spot
+    return merged.sort_values("strike").reset_index(drop=True)
