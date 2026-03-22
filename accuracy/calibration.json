@@ -1,0 +1,13 @@
+{
+  "_description": "Tracks whether stated confidence intervals contain actual price. Updated daily by grading loop.",
+  "bins": {
+    "0.68": {"stated_coverage": 0.68, "n_predictions": 0, "n_captured": 0, "realized_coverage": null},
+    "0.95": {"stated_coverage": 0.95, "n_predictions": 0, "n_captured": 0, "realized_coverage": null}
+  },
+  "calibration_notes": [
+    "Target: 68% CI should capture ~68% of actual prices over rolling 20 days.",
+    "If realized_coverage > 0.85 for 68% bin: intervals too wide — tighten.",
+    "If realized_coverage < 0.50 for 68% bin: overconfident — widen by 25%."
+  ],
+  "last_updated": null
+}

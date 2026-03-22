@@ -34,19 +34,25 @@ def reprice_from_surface(df: pd.DataFrame, surface_grid: pd.DataFrame) -> pd.Dat
         lm = float(np.log(r["strike"] / r["underlying"]))
         lookup = lookup_surface_iv(surface_grid, hour, opt_type, tenor_days, lm)
         iv = lookup["fitted_iv"]
+        # fitted_iv is in percentage (e.g. 53.5) — BS expects decimal fraction (0.535)
+        vol_decimal = float(iv) / 100.0 if pd.notna(iv) else 0.0
+        spot = float(r["underlying"])
         greeks = black_scholes_local(
-            spot=float(r["underlying"]),
+            spot=spot,
             strike=float(r["strike"]),
             t=tenor_days / 365.0,
-            vol=float(iv) if pd.notna(iv) else 0.0,
+            vol=vol_decimal,
             opt_type=opt_type,
             r=0.0,
         )
+        market_mid = r.get("mid", np.nan)
+        # surface_price from BS is in USD; mid is in BTC fraction — normalize both to BTC fraction
+        surface_price_btc = greeks["price"] / spot if spot > 0 else np.nan
         rows.append({
             "timestamp": r["timestamp"],
             "instrument": r["instrument"],
             "hour": hour,
-            "surface_price": greeks["price"],
+            "surface_price": surface_price_btc,
             "local_delta": greeks["delta"],
             "local_gamma": greeks["gamma"],
             "local_vega": greeks["vega"],
@@ -54,10 +60,10 @@ def reprice_from_surface(df: pd.DataFrame, surface_grid: pd.DataFrame) -> pd.Dat
             "surface_iv": iv,
             "fit_confidence": lookup["fit_confidence"],
             "fit_distance": lookup["fit_distance"],
-            "market_mid": r.get("mid", np.nan),
+            "market_mid": market_mid,
             "market_bid": r.get("bid", np.nan),
             "market_ask": r.get("ask", np.nan),
-            "surface_minus_mid": greeks["price"] - r.get("mid", np.nan),
+            "surface_minus_mid": surface_price_btc - market_mid,
         })
     return pd.DataFrame(rows)
 

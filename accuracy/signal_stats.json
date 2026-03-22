@@ -1,0 +1,107 @@
+{
+  "gex_equity_sign": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.85
+  },
+  "gex_crypto_sign": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.8
+  },
+  "gex_velocity_trend": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.7
+  },
+  "zero_gamma_side": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.7
+  },
+  "put_wall_proximity": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.65
+  },
+  "call_wall_proximity": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.6
+  },
+  "max_pain_pin_active": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.75
+  },
+  "skew_direction": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.6
+  },
+  "term_structure_shape": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.55
+  },
+  "iv_rv_spread": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.6
+  },
+  "variance_premium": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.55
+  },
+  "har_vs_iv": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.6
+  },
+  "charm_flow_direction": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.55
+  },
+  "vanna_flow_direction": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.5
+  },
+  "signal_consensus": {
+    "n": 0,
+    "correct": 0,
+    "wrong": 0,
+    "accuracy_30d": 0.5,
+    "weight": 0.65
+  }
+}

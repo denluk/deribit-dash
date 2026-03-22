@@ -19,7 +19,8 @@ def build_market_first_signal_table(df: pd.DataFrame,
 
     grp = out.groupby(["hour", "tte_bucket", "type"], observed=True)["mark_iv"]
     out["local_surface_zscore"] = (out["mark_iv"] - grp.transform("median")) / grp.transform("std")
-    out["iv_edge_vs_rv"] = out["regime_rv_forecast_24h"] - out["mark_iv"]
+    # Both in decimal fraction: regime_rv is already decimal (0.35), mark_iv is percentage → /100
+    out["iv_edge_vs_rv"] = out["regime_rv_forecast_24h"] - out["mark_iv"] / 100.0
     out["cost_proxy"] = ((out["ask"] - out["bid"]).clip(lower=0) / 2.0).fillna(0) + out["mark_price"].fillna(0) * 0.0005
 
     out["raw_market_signal"] = (

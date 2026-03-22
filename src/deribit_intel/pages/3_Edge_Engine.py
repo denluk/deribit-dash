@@ -1,6 +1,7 @@
 from __future__ import annotations
 import streamlit as st
 import plotly.express as px
+from deribit_intel.branding import show_logo
 from deribit_intel.data_source_ui import resolve_input_path
 from deribit_intel.loaders import load_deribit_parquet, add_base_fields
 from deribit_intel.features import add_feature_layers
@@ -8,6 +9,7 @@ from deribit_intel.rv_models import build_hourly_underlying, regime_conditioned_
 from deribit_intel.vol_surface import realized_vs_implied_tracker, event_premium_decomposition
 from deribit_intel.edge_engine import variance_premium_monitor, jump_premium_estimation
 
+show_logo()
 st.title("Edge Engine")
 path = resolve_input_path("edge_engine")
 df = add_feature_layers(add_base_fields(load_deribit_parquet(path)))

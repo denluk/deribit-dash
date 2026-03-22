@@ -1,12 +1,14 @@
 from __future__ import annotations
 import streamlit as st
 import plotly.express as px
+from deribit_intel.branding import show_logo
 from deribit_intel.data_source_ui import resolve_input_path
 from deribit_intel.loaders import load_deribit_parquet, add_base_fields
 from deribit_intel.features import add_feature_layers
 from deribit_intel.position_state import build_position_state
 from deribit_intel.execution_risk import spread_slippage_guardrails, max_short_gamma_limits, stress_test_book, liquidity_weighted_sizing, aggregate_portfolio_limits
 
+show_logo()
 st.title("Execution & Risk")
 path = resolve_input_path("execution_risk")
 df = add_feature_layers(add_base_fields(load_deribit_parquet(path)))

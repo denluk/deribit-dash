@@ -28,6 +28,31 @@ RED = "#ef5350"
 ORANGE = "#ffa726"
 BLUE = "#42a5f5"
 PURPLE = "#ab47bc"
+FONT_COLOR = "#90caf9"   # white-blue for all labels on dark background
+GRID_COLOR = "#1e2530"   # subtle grid lines
+
+# ── shared layout helper ──────────────────────────────────────────
+def _style(fig: go.Figure) -> go.Figure:
+    """Enforce dark-theme colors on every figure element explicitly.
+    Plotly's global font dict doesn't always propagate in Streamlit —
+    we must set axis/tick/annotation colors directly.
+    """
+    _ax = dict(
+        title_font=dict(color=FONT_COLOR, size=13),
+        tickfont=dict(color=FONT_COLOR, size=11),
+        tickcolor=FONT_COLOR,
+        gridcolor=GRID_COLOR,
+        linecolor="#2a3040",
+        zerolinecolor="#2a3040",
+    )
+    fig.update_xaxes(**_ax)
+    fig.update_yaxes(**_ax)
+    fig.update_annotations(font_color=FONT_COLOR, font_size=11, bgcolor="rgba(14,17,23,0.7)")
+    fig.update_layout(
+        font=dict(color=FONT_COLOR, size=12),
+        legend=dict(font=dict(color=FONT_COLOR), bgcolor="rgba(14,17,23,0.6)", bordercolor="#2a3040", borderwidth=1),
+    )
+    return fig
 
 # ── page config ──────────────────────────────────────────────────────
 st.title("Gamma Exposure (GEX)")
@@ -140,35 +165,40 @@ if show_crypto_gex:
 
 # Vertical reference lines
 fig1.add_vline(x=spot, line_dash="dash", line_color="white", line_width=2,
-               annotation_text=f"Spot ${spot:,.0f}", annotation_position="top right")
+               annotation_text=f"Spot ${spot:,.0f}", annotation_position="top right",
+               annotation_font_color="white", annotation_font_size=12)
 
 if show_zero_gamma and levels["zero_gamma_strike"]:
     fig1.add_vline(x=levels["zero_gamma_strike"], line_dash="dot", line_color=ORANGE,
                    line_width=1.5,
                    annotation_text=f"Zero γ ${levels['zero_gamma_strike']:,.0f}",
-                   annotation_position="bottom right")
+                   annotation_position="bottom right",
+                   annotation_font_color=ORANGE, annotation_font_size=11)
 
 if levels["max_pain"]:
     fig1.add_vline(x=levels["max_pain"], line_dash="longdash", line_color=PURPLE,
                    line_width=1.5,
                    annotation_text=f"Max Pain ${levels['max_pain']:,.0f}",
-                   annotation_position="top left")
+                   annotation_position="top left",
+                   annotation_font_color=PURPLE, annotation_font_size=11)
 
 if levels["put_wall"] and strike_lo <= levels["put_wall"] <= strike_hi:
     fig1.add_vline(x=levels["put_wall"], line_dash="dot", line_color=GREEN, line_width=1,
-                   annotation_text="Put Wall", annotation_position="bottom left")
+                   annotation_text="Put Wall", annotation_position="bottom left",
+                   annotation_font_color=GREEN)
 
 if levels["call_wall"] and strike_lo <= levels["call_wall"] <= strike_hi:
     fig1.add_vline(x=levels["call_wall"], line_dash="dot", line_color=BLUE, line_width=1,
-                   annotation_text="Call Wall", annotation_position="top left")
+                   annotation_text="Call Wall", annotation_position="top left",
+                   annotation_yshift=-22, annotation_font_color=BLUE)
 
 fig1.update_layout(
     barmode="relative", bargap=0, bargroupgap=0,
     xaxis_title="Strike", yaxis_title=f"Net GEX ({scale_lbl})",
     legend_title="Convention", height=580,
-    plot_bgcolor=BG, paper_bgcolor=BG,
+    font=dict(color=FONT_COLOR), plot_bgcolor=BG, paper_bgcolor=BG,
 )
-st.plotly_chart(fig1, width="stretch")
+st.plotly_chart(_style(fig1), use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════
 # CHART 1b — Dealer vs Speculator GEX split
@@ -199,20 +229,20 @@ for participant, color in [("Structural / Dealer-like", TEAL), ("Speculative / R
     ))
 
 fig1b.add_vline(x=spot, line_dash="dash", line_color="white", line_width=2,
-                annotation_text=f"Spot ${spot:,.0f}", annotation_position="top right")
+                annotation_text=f"Spot ${spot:,.0f}", annotation_position="top right", annotation_font_color=FONT_COLOR)
 if show_zero_gamma and levels["zero_gamma_strike"]:
     fig1b.add_vline(x=levels["zero_gamma_strike"], line_dash="dot", line_color=ORANGE,
                     line_width=1.5,
                     annotation_text=f"Zero γ ${levels['zero_gamma_strike']:,.0f}",
-                    annotation_position="bottom right")
+                    annotation_position="bottom right", annotation_font_color=FONT_COLOR)
 fig1b.add_hline(y=0, line_color="grey", line_dash="dash", line_width=1)
 fig1b.update_layout(
     barmode="group", bargap=0.1,
     xaxis_title="Strike", yaxis_title=f"Net GEX ({scale_lbl})",
-    height=480, plot_bgcolor=BG, paper_bgcolor=BG,
+    height=480, font=dict(color=FONT_COLOR), plot_bgcolor=BG, paper_bgcolor=BG,
     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
 )
-st.plotly_chart(fig1b, width="stretch")
+st.plotly_chart(_style(fig1b), use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════
 # CHART 1c — GEX Evolution (now / -1H / -4H)
@@ -239,7 +269,7 @@ if latest_hour is not None:
             h = max(candidates)
             evo_snapshots[f"{label} ({h.strftime('%H:%M')})"] = compute_gex_at_hour(df_f, h)
 
-EVO_COLORS = {0: "white", 1: "#42a5f5", 2: "#ab47bc"}
+EVO_COLORS = {0: "white", 1: "#42a5f5", 2: "#ffa726"}
 EVO_DASH   = {0: "solid", 1: "dash", 2: "dot"}
 
 fig1c = go.Figure()
@@ -261,14 +291,14 @@ for idx, (lbl, evo_df) in enumerate(evo_snapshots.items()):
 
 if latest_hour is not None:
     fig1c.add_vline(x=spot, line_dash="dash", line_color="white", line_width=2,
-                    annotation_text=f"Spot ${spot:,.0f}", annotation_position="top right")
+                    annotation_text=f"Spot ${spot:,.0f}", annotation_position="top right", annotation_font_color=FONT_COLOR)
 fig1c.add_hline(y=0, line_color="grey", line_dash="dash", line_width=1)
 fig1c.update_layout(
     xaxis_title="Strike", yaxis_title=f"Net GEX equity ({scale_lbl})",
-    height=400, plot_bgcolor=BG, paper_bgcolor=BG,
+    height=400, font=dict(color=FONT_COLOR), plot_bgcolor=BG, paper_bgcolor=BG,
     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
 )
-st.plotly_chart(fig1c, width="stretch")
+st.plotly_chart(_style(fig1c), use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════
 # CHART 2 — Absolute gamma walls (sign-agnostic)
@@ -295,29 +325,44 @@ fig2.add_trace(go.Bar(
     name="Put gamma", marker_color=PURPLE, opacity=0.75,
 ))
 fig2.add_vline(x=spot, line_dash="dash", line_color="white", line_width=2,
-               annotation_text=f"Spot ${spot:,.0f}", annotation_position="top right")
+               annotation_text=f"Spot ${spot:,.0f}", annotation_position="top right", annotation_font_color=FONT_COLOR)
 
 top3 = sorted(levels["gamma_wall_top3"], key=lambda x: -x[1])
-for s, g in top3:
+for rank, (s, g) in enumerate(top3):
     if strike_lo <= s <= strike_hi:
         fig2.add_vline(x=s, line_dash="dot", line_color=ORANGE, line_width=1,
-                       annotation_text=f"Wall ${s:,.0f}", annotation_position="top left")
+                       annotation_text=f"Wall #{rank+1} ${s:,.0f}",
+                       annotation_position="top left",
+                       annotation_yshift=-(rank * 22),  # stagger to prevent overlap
+                       annotation_font_color=ORANGE, annotation_font_size=10)
 
 fig2.update_layout(
     barmode="stack", bargap=0,
     xaxis_title="Strike", yaxis_title=f"Gross GEX ({scale_lbl})",
-    height=420, plot_bgcolor=BG, paper_bgcolor=BG,
+    height=420, font=dict(color=FONT_COLOR), plot_bgcolor=BG, paper_bgcolor=BG,
 )
-st.plotly_chart(fig2, width="stretch")
+st.plotly_chart(_style(fig2), use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════
 # CHART 3 — GEX timeseries + regime + velocity
 # ══════════════════════════════════════════════════════════════════
 st.subheader("Net GEX over time — regime & velocity")
 st.caption(
-    "Solid = equity GEX, dashed = crypto GEX. "
-    "When both are negative → confirmed short-gamma regime (explosive vol). "
-    "**Velocity** (bottom) = rate of GEX change. Velocity turning negative = early regime flip warning."
+    "**Top panel** — two GEX conventions over time. "
+    "Solid green area = equity-style net GEX (calls +, puts −). "
+    "Dashed orange = crypto-adjusted net GEX (both calls and puts treated as negative, "
+    "reflecting that retail speculators buy calls and dealers end up short gamma on both sides). "
+    "When both lines are **above zero** → dealers are net long gamma: they buy dips and sell rallies, "
+    "dampening volatility. "
+    "When both are **below zero** → confirmed short-gamma regime: dealers must chase price, "
+    "amplifying every move. "
+    "The **gap between the two lines** is the uncertainty band — the wider it is, "
+    "the less certain the regime call. "
+    "**Bottom panel (velocity)** — bar-by-bar change in equity GEX. "
+    "Green bars = GEX growing (regime strengthening). "
+    "Red bars = GEX falling (regime eroding or flipping). "
+    "A velocity turning red while GEX is still positive is an **early warning** of an impending regime flip — "
+    "watch for two or more consecutive red bars as a confirmation signal."
 )
 
 ts = gex_ts.copy()
@@ -345,9 +390,9 @@ with col_l:
     fig3.add_hline(y=0, line_color="grey", line_dash="dash", line_width=1)
     fig3.update_layout(
         xaxis_title="Time", yaxis_title=f"Net GEX ({scale_lbl})",
-        height=280, plot_bgcolor=BG, paper_bgcolor=BG,
+        height=280, font=dict(color=FONT_COLOR), plot_bgcolor=BG, paper_bgcolor=BG,
     )
-    st.plotly_chart(fig3, width="stretch")
+    st.plotly_chart(_style(fig3), use_container_width=True)
 
     # Velocity sub-chart
     fig3v = go.Figure()
@@ -360,10 +405,10 @@ with col_l:
     fig3v.add_hline(y=0, line_color="grey", line_dash="dash", line_width=1)
     fig3v.update_layout(
         xaxis_title="Time", yaxis_title=f"ΔGEX/period ({scale_lbl})",
-        height=180, plot_bgcolor=BG, paper_bgcolor=BG,
+        height=180, font=dict(color=FONT_COLOR), plot_bgcolor=BG, paper_bgcolor=BG,
         showlegend=False,
     )
-    st.plotly_chart(fig3v, width="stretch")
+    st.plotly_chart(_style(fig3v), use_container_width=True)
 
 with col_r:
     # Regime history table
@@ -400,10 +445,10 @@ else:
     fig4.add_hline(y=0, line_color="grey", line_dash="dash", line_width=1)
     fig4.update_layout(
         xaxis_title="Strike-Type", yaxis_title=f"Charm exposure ({scale_lbl}/day)",
-        height=320, plot_bgcolor=BG, paper_bgcolor=BG,
+        height=320, font=dict(color=FONT_COLOR), plot_bgcolor=BG, paper_bgcolor=BG,
         xaxis=dict(tickangle=-45),
     )
-    st.plotly_chart(fig4, width="stretch")
+    st.plotly_chart(_style(fig4), use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════
 # CHART 5 — Vanna exposure (vol-driven delta hedging)
@@ -430,14 +475,14 @@ if not vanna_plot.empty:
         name="Net vanna exp",
     ))
     fig5.add_vline(x=spot, line_dash="dash", line_color="white", line_width=2,
-                   annotation_text=f"Spot", annotation_position="top right")
+                   annotation_text=f"Spot", annotation_position="top right", annotation_font_color=FONT_COLOR)
     fig5.add_hline(y=0, line_color="grey", line_dash="dash", line_width=1)
     fig5.update_layout(
         barmode="relative", bargap=0,
         xaxis_title="Strike", yaxis_title=f"Δ delta per 1 vol pt ({scale_lbl})",
-        height=360, plot_bgcolor=BG, paper_bgcolor=BG,
+        height=360, font=dict(color=FONT_COLOR), plot_bgcolor=BG, paper_bgcolor=BG,
     )
-    st.plotly_chart(fig5, width="stretch")
+    st.plotly_chart(_style(fig5), use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════
 # CHART 6 — Max pain curve
@@ -463,15 +508,15 @@ fig6.add_trace(go.Scatter(
 if levels["max_pain"] and mp_plot["strike"].between(strike_lo, strike_hi).any():
     fig6.add_vline(x=levels["max_pain"], line_dash="dot", line_color=PURPLE, line_width=2,
                    annotation_text=f"Max Pain ${levels['max_pain']:,.0f}",
-                   annotation_position="top right")
+                   annotation_position="top right", annotation_font_color=FONT_COLOR)
 fig6.add_vline(x=spot, line_dash="dash", line_color="white", line_width=2,
-               annotation_text=f"Spot ${spot:,.0f}", annotation_position="top left")
+               annotation_text=f"Spot ${spot:,.0f}", annotation_position="top left", annotation_font_color=FONT_COLOR)
 
 fig6.update_layout(
     xaxis_title="Strike (expiry price)", yaxis_title="Total buyer P&L ($M)",
-    height=320, plot_bgcolor=BG, paper_bgcolor=BG,
+    height=320, font=dict(color=FONT_COLOR), plot_bgcolor=BG, paper_bgcolor=BG,
 )
-st.plotly_chart(fig6, width="stretch")
+st.plotly_chart(_style(fig6), use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════
 # CHART 7 — GEX by expiry
@@ -490,9 +535,9 @@ fig7 = go.Figure(go.Bar(
 fig7.add_hline(y=0, line_color="grey", line_dash="dash", line_width=1)
 fig7.update_layout(
     xaxis_title="DTE bucket", yaxis_title=f"Net GEX ({scale_lbl})",
-    height=300, plot_bgcolor=BG, paper_bgcolor=BG,
+    height=300, font=dict(color=FONT_COLOR), plot_bgcolor=BG, paper_bgcolor=BG,
 )
-st.plotly_chart(fig7, width="stretch")
+st.plotly_chart(_style(fig7), use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════
 # METHODOLOGY NOTES

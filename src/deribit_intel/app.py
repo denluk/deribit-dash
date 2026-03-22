@@ -1,7 +1,9 @@
 from __future__ import annotations
 import streamlit as st
+from deribit_intel.branding import show_logo
 
 st.set_page_config(layout="wide", page_title="Deribit Market-First Options Intelligence")
+show_logo()
 st.title("Deribit Market-First Options Intelligence")
 
 st.markdown("""

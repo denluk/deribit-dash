@@ -1,5 +1,6 @@
 from __future__ import annotations
 import streamlit as st
+from deribit_intel.branding import show_logo
 from deribit_intel.data_source_ui import resolve_input_path
 from deribit_intel.loaders import load_deribit_parquet, add_base_fields
 from deribit_intel.features import add_feature_layers
@@ -10,6 +11,7 @@ from deribit_intel.market_repricing import reprice_from_surface
 from deribit_intel.surface_quality import score_contract_surface_reliability
 from deribit_intel.signals_market import build_market_first_signal_table, build_market_top_signals
 
+show_logo()
 st.title("Market-First Signal Layer")
 path = resolve_input_path("signals")
 df = add_feature_layers(add_base_fields(load_deribit_parquet(path)))

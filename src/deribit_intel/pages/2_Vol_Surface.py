@@ -1,12 +1,14 @@
 from __future__ import annotations
 import streamlit as st
 import plotly.express as px
+from deribit_intel.branding import show_logo
 from deribit_intel.data_source_ui import resolve_input_path
 from deribit_intel.loaders import load_deribit_parquet, add_base_fields
 from deribit_intel.features import add_feature_layers
 from deribit_intel.vol_surface import extract_atm_monitor, build_skew_monitor, build_term_structure, realized_vs_implied_tracker, event_premium_decomposition
 from deribit_intel.surface_interpolation import build_delta_tenor_surface
 
+show_logo()
 st.title("Volatility Surface Engine")
 path = resolve_input_path("vol_surface")
 df = add_feature_layers(add_base_fields(load_deribit_parquet(path)))
